@@ -66,29 +66,29 @@ class Cache
     /**
      * 处理缓存方法
      *
-     * @param $class string 类名
+     * @param $object object 对象
      * @param $method string 方法名
      * @param $arguments array 参数列表
      * @return mixed
      * @throws InvalidArgumentException 如果方法不存在，抛出异常
      */
-    public function get($class, $name, $arguments)
+    public function get($object, $name, $arguments)
     {
         if ($this->redis === null) {
             throw new InvalidArgumentException("未初始化Redis变量。\n");
         }
 
         if (strlen($name) < 5) {
-            throw new InvalidArgumentException(sprintf("Method %s::%s does not exist", $class, $method));
+            throw new InvalidArgumentException(sprintf("Method %s::%s does not exist", get_class($object), $method));
         }
 
         $method = substr($name, 0, -5);
         $action = substr($name, -5);
-        if (in_array($action, $this->actions, true) === false) {
-            throw new InvalidArgumentException(sprintf("Method %s::%s does not exist", $class, $method));
+        if (!in_array($action, $this->actions, true) === false) {
+            throw new InvalidArgumentException(sprintf("Method %s::%s does not exist", get_class($object), $method));
         }
 
-        return $this->action($class, $method, $arguments);
+        return $this->$action($object, $method, $arguments);
     }
 
     /**
@@ -99,9 +99,9 @@ class Cache
      * @return mixed
      * @throws InvalidArgumentException 如果方法不存在，抛出异常
      */
-    private function cache($class, $method, $arguments)
+    private function cache($object, $method, $arguments)
     {
-        $key = $this->key($class, $method, $arguments);
+        $key = $this->key(get_class($object), $method, $arguments);
 
         $data = $this->redis->get($key);
         if ($data !== false) {
@@ -109,11 +109,11 @@ class Cache
             return $decodeData === null ? $data : $decodeData;
         }
 
-        if (method_exists($class, $method) === false) {
-            throw new InvalidArgumentException(sprintf("Method %s::%s does not exist", $class, $method));
+        if (method_exists($object, $method) === false) {
+            throw new InvalidArgumentException(sprintf("Method %s::%s does not exist", get_class($object), $method));
         }
 
-        $data = call_user_func_array([$class, $method], $arguments);
+        $data = call_user_func_array([$object, $method], $arguments);
 
         $expire = empty($data) ? $this->config['emptyExpire'] : $this->config['expire'];
         $this->redis->set($key, json_encode($data), $expire);
@@ -125,18 +125,18 @@ class Cache
      * 删除指定缓存，参数和原数据获取方法一样
      * @return mixed
      */
-    private function clean($class, $method, $arguments)
+    private function clean($object, $method, $arguments)
     {
-        return $this->redis->del($this->key($class, $method, $arguments));
+        return $this->redis->del($this->key(get_class($object), $method, $arguments));
     }
 
     /**
      * 删除指定方法的所有缓存
      * @return bool
      */
-    private function flush($class, $method, $arguments)
+    private function flush($object, $method, $arguments)
     {
-        $key = $this->key($class, $method, '*');
+        $key = $this->key(get_class($object), $method, '*');
         $keys = $this->redis->keys($key);
 
         return $this->redis->del($keys);

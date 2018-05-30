@@ -32,7 +32,7 @@ class Cache
      * 可用的Redis操作方法名
      * @var array
      */
-    private $actions = ['cache', 'clean', 'flush'];
+    private $actions = ['cache', 'clear', 'flush'];
 
     /**
      * 构造方法
@@ -116,7 +116,7 @@ class Cache
      * 删除指定缓存，参数和原数据获取方法一样
      * @return mixed
      */
-    private function clean($object, $method, $arguments)
+    private function clear($object, $method, $arguments)
     {
         return $this->redis->del($this->key(get_class($object), $method, $arguments));
     }

@@ -1,6 +1,6 @@
 <?php
 
-namespace cache;
+namespace yeszao\cache;
 
 use \InvalidArgumentException;
 use \Redis;

@@ -2,7 +2,11 @@
     "name": "yeszao/cache",
     "type": "library",
     "description": "General redis and memcache class",
-    "keywords": [],
+    "keywords": [
+        "Cache",
+        "Redis",
+        "PHP"
+    ],
     "homepage": "https://www.awaimai.com/",
     "license": "MIT",
     "authors": [

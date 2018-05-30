@@ -10,15 +10,6 @@ use \Redis;
  *
  * @author 歪麦 <galley.meng@gmail.com>
  * @link https://www.awaimai.com/
- * @example
- * 假设现有 app\models\Book 类，并已经继承我们的这个缓存策略类。
- * 那么，
- * <pre>
- *  (new Book)->getById(100);           // 原始的、不用缓存的调用方式，一般是读取数据库的数据。
- *  (new Book)->getByIdCache(100);      // 使用缓存的调用方式，缓存键名为：app_models_book:getbyid: + md5(参数列表)
- *  (new Book)->getByIdClean(100);      // 删除这个缓存
- *  (new Book)->getByIdFlush();         // 没有参数。删除 getById() 方法对应的所有缓存，即删除 app_models_book:getbyid:*
- * </pre>
  *
  */
 class Cache

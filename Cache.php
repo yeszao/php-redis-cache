@@ -20,6 +20,11 @@ class Cache
      */
     private $redis;
     /**
+     * 正在调用的方法名称
+     * @var string
+     */
+    private $class;
+    /**
      * 配置
      * @var array
      */
@@ -69,14 +74,16 @@ class Cache
             throw new InvalidArgumentException("未初始化Redis变量。\n");
         }
 
+        $this->class = get_class($object);
+
         if (strlen($name) < 5) {
-            throw new InvalidArgumentException(sprintf("Method %s::%s does not exist", get_class($object), $method));
+            throw new InvalidArgumentException(sprintf("Method %s->%s does not exist", $this->class, $name));
         }
 
         $method = substr($name, 0, -5);
         $action = substr($name, -5);
         if (!in_array($action, $this->actions, true) === false) {
-            throw new InvalidArgumentException(sprintf("Method %s::%s does not exist", get_class($object), $method));
+            throw new InvalidArgumentException(sprintf("Method %s->%s does not exist", $this->class, $method));
         }
 
         return $this->$action($object, $method, $arguments);
@@ -92,7 +99,7 @@ class Cache
      */
     private function cache($object, $method, $arguments)
     {
-        $key = $this->key(get_class($object), $method, $arguments);
+        $key = $this->key($method, $arguments);
 
         $data = $this->redis->get($key);
         if ($data !== false) {
@@ -101,7 +108,7 @@ class Cache
         }
 
         if (method_exists($object, $method) === false) {
-            throw new InvalidArgumentException(sprintf("Method %s::%s does not exist", get_class($object), $method));
+            throw new InvalidArgumentException(sprintf("Method %s->%s does not exist", $this->class, $method));
         }
 
         $data = call_user_func_array([$object, $method], $arguments);
@@ -118,7 +125,7 @@ class Cache
      */
     private function clear($object, $method, $arguments)
     {
-        return $this->redis->del($this->key(get_class($object), $method, $arguments));
+        return $this->redis->del($this->key($method, $arguments));
     }
 
     /**
@@ -127,7 +134,7 @@ class Cache
      */
     private function flush($object, $method, $arguments)
     {
-        $key = $this->key(get_class($object), $method, '*');
+        $key = $this->key($method, '*');
         $keys = $this->redis->keys($key);
 
         return $this->redis->del($keys);
@@ -137,9 +144,9 @@ class Cache
      * 生成缓存键名
      * @return string
      */
-    private function key($class, $method, $arguments)
+    private function key($method, $arguments)
     {
-        $class = str_replace('\\', '_', $class);
+        $class = str_replace('\\', '_', $this->class);
         $args = ($arguments === '*') ? '*' : md5(json_encode($arguments));
 
         return strtolower(sprintf('%s%s:%s:%s', $this->config['prefix'], $class, $method, $args));
